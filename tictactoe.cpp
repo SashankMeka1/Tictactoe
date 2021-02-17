@@ -2,84 +2,88 @@
 #include <stdlib.h>
 using namespace std;
 void printboard(char game_arr[4][4]){
-    for(int i = 0; i <4; i++){//print board
-        for(int j = 0; j < 4; j++){
-            cout<<game_arr[i][j]<<" ";
-        }
-        cout << endl;
-    }
+	for(int i = 0; i <4; i++){//print board
+		for(int j = 0; j < 4; j++){
+			cout<<game_arr[i][j]<<" ";
+		}
+		cout << endl;
+	}
 }
-int* updateboard(char game_arr[4][4], char player){
-    char move[2];
-    cout << player <<" move: ";
-    cin >> move;//check if slot empty and give update coords
-    int y = move[0] -96;
-    int x = move[1]-48;
-    if(x < 4 and y < 4 and game_arr[x][y]==' '){
-	int *update = new int[2];
-	update[0] = x;
-	update[1] = y;
-	game_arr[x][y] = player;
-	return update;
-    }
-    else{
-        cout << "Illegal Move"<<endl;
-        return updateboard(game_arr, player);
-    }
+bool checkwins(int win_arr[7]){// check wins by seeing if row or column or diagonal is greater than 3
+	for(int i =0 ; i < 7; i++){
+		if(win_arr[i] >=3){
+			return true;
+		}
+	}
+	return false;
 }
-int* game(char game_arr[4][4], int xcount, int ocount, int turnnum){
-    int *update;//update based on coords
-    update = updateboard(game_arr, 'X');
-    xcount += *update+*(update+1);
-    printboard(game_arr);//add coords to xcount. will be helpful later
-    turnnum++;
-    free (update);
-    if (turnnum > 5 and turnnum%2==0 and (36 - xcount)%3==0){
-        int* win_arr = new int[2];//if number of turns is greater than five then win is possible and if it is even then x wins otherwise o wins
-        win_arr[0] = 1;
-        win_arr[1] = 0;//the modulus of thirty six minus the sums of the coordinates will be zero. saves us from writing a checkwins function
-        cout << "Player X won!"<<endl;
-        return win_arr;
-    }
-    
-    update = updateboard(game_arr, 'O');
-    ocount += *update+*(update+1);
-    printboard(game_arr);
-    turnnum++;
-    free (update);
-    if (turnnum > 5 and turnnum%2!=0 and (36-ocount)%3==0){
-        int* win_arr = new int[2];
-        win_arr[0] = 0;
-        win_arr[1] = 1;
-        cout << "Player O won!"<<endl;
-        return win_arr;
-    }
-    
-    return game(game_arr, xcount, ocount, turnnum);
+int * get_move(char game_arr[4][4], char player){
+	char move[2];// get move and take out bad moves
+	cout << player << " move: ";
+	cin >> move;
+	int * ptr = new int[2];
+	ptr[0] = ((int)move[1])-48;
+	ptr[1] = ((int)move[0])-96;
+	if(game_arr[ptr[0]][ptr[1]] == ' '){
+		return ptr;
+	}
+	else{
+		cout << "Invalid input";
+		return get_move(game_arr, player);
+	}
+	return ptr;
+		
 }
-void gameloop(int xwins, int owins){
-    int xcount = 0;//wins and game array
-    int ocount = 0;
-    int turnnum = 1;
-    char game_arr[4][4]={{' ','A','B','C'},{'1',' ',' ',' '},{'2',' ',' ',' '},{'3',' ',' ',' '}};
-    int* win_arr;
-    printboard(game_arr);
-    win_arr = game(game_arr, xcount, ocount, turnnum);
-    xwins += win_arr[0];
-    owins += win_arr[1];
-    cout << "X Wins:" << xwins<<" and "<< "O wins:"<<owins<<" Play again?(y/n)";
-    char answer;
-    cin >> answer;//check if play again otherwise end
-    if (answer == 'y'){
-        gameloop(xwins, owins);
-    }
-    else{
-        cout << "goodbye"<<endl;
-    }
-}
+int game(char game_arr[4][4], int xwins[7], int owins[7], int turnnum){
+	printboard(game_arr);
+	turnnum++;//update board run game use length seven array for all rows and diagonals and increment each row and column till we get three and declare win for x or o
+	int * move = get_move(game_arr, 'X');	
+	game_arr[move[0]][move[1]] = 'X';
+	xwins[move[0]-1] += 1;
+	xwins[move[1]+2] += 1;
+	xwins[7] += (move[0] == move[1]);
+	if(checkwins(xwins)){
+		printboard(game_arr);
+		cout << "X won!"<<endl;
+		return 0;
+	}
+	if(turnnum == 9){//if number of turns reaches nine its a tie
+		cout << "Tie"<<endl;
+		return 20;
+	}
+	else{
+		printboard(game_arr);
+		move = get_move(game_arr, 'O');
+		game_arr[move[0]][move[1]] = 'O';
+		owins[move[0]-1]+=1;
+		owins[move[1]+2]+=1;
+		owins[7] += (move[0] == move[1]);
+		if(checkwins(owins)){
+			printboard(game_arr);
+			cout << "O won!";
+			return 1;
+		}
+		turnnum++;
+		return game(game_arr, xwins, owins, turnnum);
+	}
+
+}	
 int main(){
-    int xwins = 0;
-    int owins = 0;
-    gameloop(xwins, owins);
-    return 0;
+	char input;
+	int turnnum = 0;
+	static int win[2] = {0};//variables and array tracking wins
+	int xwins[7] = {0};
+	int owins[7] = {0};
+     	char game_arr[4][4] = {{' ','A','B','C'},{'1',' ',' ',' '},{'2',' ',' ',' '},{'3',' ',' ',' '}};
+	win[game(game_arr, xwins, owins, turnnum)]++;//c++ doesnt give out of bounds error :)
+	cout << "X wins:" <<win[0]<<" O wins:"<<win[1]<<endl; 
+	cout << "play again? y or n only!"<<endl;
+	cin >> input;
+	if(input == 'y'){
+		main();
+	}
+	else{
+		return 0;
+	}
+	return 0;
 }
